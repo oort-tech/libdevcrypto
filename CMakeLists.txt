@@ -2,4 +2,4 @@ file(GLOB SOURCES "*.cpp")
 file(GLOB HEADERS "*.h")
 
 add_library(devcrypto ${SOURCES} ${HEADERS})
-target_link_libraries(devcrypto PUBLIC devcore Secp256k1 PRIVATE libff::ff)
+target_link_libraries(devcrypto PUBLIC devcore PRIVATE libff::ff)

@@ -27,6 +27,7 @@
 #include <mutex>
 #include <libdevcore/Common.h>
 #include <libdevcore/FixedHash.h>
+#include <libdevcore/Address.h>
 
 namespace dev
 {
@@ -59,6 +60,25 @@ struct SignatureStruct
     h256 s;
     byte v = 0;
 };
+
+/// Convert a secret key into the public key equivalent.
+Public toPublic(Secret const& _secret);
+
+/// Convert a compressed public key into the uncompressed equivalent.
+Public toPublic(PublicCompressed const& _publicCompressed);
+
+/// Convert a secret key into the public key in compressed format.
+PublicCompressed toPublicCompressed(Secret const& _secret);
+
+/// Convert a public key to address.
+Address toAddress(Public const& _public);
+
+/// Convert a secret key into address of public key equivalent.
+/// @returns 0 if it's not a valid secret key.
+Address toAddress(Secret const& _secret);
+
+/// Convert transaction from and nonce to address.
+Address toAddress(Address const& _from, u256 const& _nonce);
 
 /// Recovers Public key from signed message hash.
 Public recover(Signature const& _sig, h256 const& _hash);

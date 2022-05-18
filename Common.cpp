@@ -26,6 +26,8 @@
 #include <secp256k1_ecdh.h>
 #include <secp256k1_recovery.h>
 #include <secp256k1_sha256.h>
+#include <libdevcore/SHA3.h>
+#include <libdevcore/RLP.h>
 using namespace std;
 using namespace dev;
 
@@ -63,6 +65,66 @@ bool dev::SignatureStruct::isValid() const noexcept
     static const h256 s_zero;
 
     return (v <= 1 && r > s_zero && s > s_zero && r < s_max && s < s_max);
+}
+
+Public dev::toPublic(Secret const& _secret)
+{
+	std::array<byte, 65> serializedPubkey;
+	if (!toPublicKey(_secret, SECP256K1_EC_UNCOMPRESSED, serializedPubkey))
+		return{};
+
+	// Expect single byte header of value 0x04 -- uncompressed public key.
+	assert(serializedPubkey[0] == 0x04);
+
+	// Create the Public skipping the header.
+	return Public{ &serializedPubkey[1], Public::ConstructFromPointer };
+}
+
+Public dev::toPublic(PublicCompressed const& _publicCompressed)
+{
+	auto* ctx = getCtx();
+
+	secp256k1_pubkey rawPubkey;
+	if (!secp256k1_ec_pubkey_parse(
+		ctx, &rawPubkey, _publicCompressed.data(), PublicCompressed::size))
+		return{};
+
+	std::array<byte, 65> serializedPubkey;
+	auto serializedPubkeySize = serializedPubkey.size();
+	secp256k1_ec_pubkey_serialize(
+		ctx, serializedPubkey.data(), &serializedPubkeySize, &rawPubkey, SECP256K1_EC_UNCOMPRESSED);
+	assert(serializedPubkeySize == serializedPubkey.size());
+	// Expect single byte header of value 0x04 -- uncompressed public key.
+	assert(serializedPubkey[0] == 0x04);
+	// Create the Public skipping the header.
+	return Public{ &serializedPubkey[1], Public::ConstructFromPointer };
+}
+
+PublicCompressed dev::toPublicCompressed(Secret const& _secret)
+{
+	PublicCompressed serializedPubkey;
+	if (!toPublicKey(_secret, SECP256K1_EC_COMPRESSED, serializedPubkey.asArray()))
+		return{};
+
+	// Expect single byte header of value 0x02 or 0x03 -- compressed public key.
+	assert(serializedPubkey[0] == 0x02 || serializedPubkey[0] == 0x03);
+
+	return serializedPubkey;
+}
+
+Address dev::toAddress(Public const& _public)
+{
+	return right160(sha3(_public.ref()));
+}
+
+Address dev::toAddress(Secret const& _secret)
+{
+	return toAddress(toPublic(_secret));
+}
+
+Address dev::toAddress(Address const& _from, u256 const& _nonce)
+{
+	return right160(sha3(rlpList(_from, _nonce)));
 }
 
 Public dev::recover(Signature const& _sig, h256 const& _message)

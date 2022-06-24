@@ -25,7 +25,7 @@
 #include <secp256k1-vrf.h>
 #include <secp256k1_ecdh.h>
 #include <secp256k1_recovery.h>
-#include "secp256k1_sha256.h"
+#include "hash.h"
 #include "hash_impl.h"
 #include <libdevcore/SHA3.h>
 #include <libdevcore/RLP.h>

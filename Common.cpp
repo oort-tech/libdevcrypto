@@ -29,6 +29,8 @@
 #include "hash_impl.h"
 #include <libdevcore/SHA3.h>
 #include <libdevcore/RLP.h>
+#include <mcp/common/log.hpp>
+
 using namespace std;
 using namespace dev;
 
@@ -111,6 +113,24 @@ PublicCompressed dev::toPublicCompressed(Secret const& _secret)
 	assert(serializedPubkey[0] == 0x02 || serializedPubkey[0] == 0x03);
 
 	return serializedPubkey;
+}
+
+secp256k1_pubkey dev::toPubkey(Signature const& _sig, h256 const& _message)
+{
+    int v = _sig[64];
+    if (v > 3)
+        return {};
+
+    auto* ctx = getCtx();
+    secp256k1_ecdsa_recoverable_signature rawSig;
+    if (!secp256k1_ecdsa_recoverable_signature_parse_compact(ctx, &rawSig, _sig.data(), v))
+        return {};
+
+    secp256k1_pubkey rawPubkey;
+    if (!secp256k1_ecdsa_recover(ctx, &rawPubkey, &rawSig, _message.data()))
+        return {};
+
+    return rawPubkey;
 }
 
 Address dev::toAddress(Public const& _public)

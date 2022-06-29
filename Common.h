@@ -28,6 +28,9 @@
 #include <libdevcore/Common.h>
 #include <libdevcore/FixedHash.h>
 #include <libdevcore/Address.h>
+#include <secp256k1-vrf.h>
+#include <secp256k1_ecdh.h>
+#include <secp256k1_recovery.h>
 
 namespace dev
 {
@@ -70,6 +73,8 @@ Public toPublic(PublicCompressed const& _publicCompressed);
 /// Convert a secret key into the public key in compressed format.
 PublicCompressed toPublicCompressed(Secret const& _secret);
 
+secp256k1_pubkey toPubkey(Signature const& _sig, h256 const& _message);
+
 /// Convert a public key to address.
 Address toAddress(Public const& _public);
 
@@ -91,5 +96,4 @@ bool verify(Public const& _k, Signature const& _s, h256 const& _hash);
 
 // Verify signature with compressed public key
 bool verify(PublicCompressed const& _key, h512 const& _signature, h256 const& _hash);
-
 }

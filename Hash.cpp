@@ -20,7 +20,7 @@
  */
 
 #include "Hash.h"
-#include "hash.h"
+#include <hash.h>
 
 using namespace dev;
 

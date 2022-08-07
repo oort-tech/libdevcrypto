@@ -28,8 +28,6 @@
 #include <hash_impl.h>
 #include <libdevcore/SHA3.h>
 #include <libdevcore/RLP.h>
-#include <mcp/common/log.hpp>
-
 using namespace std;
 using namespace dev;
 

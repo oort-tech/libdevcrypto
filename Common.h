@@ -71,10 +71,14 @@ Public toPublic(Secret const& _secret);
 /// Convert a compressed public key into the uncompressed equivalent.
 Public toPublic(PublicCompressed const& _publicCompressed);
 
+/// Convert a public key into the public key in compressed format.
+PublicCompressed toPublicCompressed(Public const& _public);
+
 /// Convert a secret key into the public key in compressed format.
 PublicCompressed toPublicCompressed(Secret const& _secret);
 
-secp256k1_pubkey toPubkey(Signature const& _sig, h256 const& _message);
+/// Convert a secret key into the public key equivalent.
+secp256k1_pubkey toPublickey(Secret const& _secret);
 
 /// Convert a public key to address.
 Address toAddress(Public const& _public);
@@ -134,12 +138,12 @@ Public recover(Signature const& _sig, h256 const& _hash);
     
 /// Returns siganture of message hash.
 Signature sign(Secret const& _k, h256 const& _hash);
-    
-/// Verify signature.
-bool verify(Public const& _k, Signature const& _s, h256 const& _hash);
 
-// Verify signature with compressed public key
-bool verify(PublicCompressed const& _key, h512 const& _signature, h256 const& _hash);
+/// Returns true if sign successed.
+bool signProve(h648 & _proof, Secret const& _k, secp256k1_pubkey& _rawPubkey, h256 const& _hash);
+
+/// Verify signature with compressed public key
+bool verify(h256 & _out, h648 const& _proof, PublicCompressed const& _key, h256 const& _hash);
 
 /// Simple class that represents a "key pair".
 /// All of the data of the class can be regenerated from the secret key (m_secret) alone.

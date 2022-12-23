@@ -107,6 +107,30 @@ Public dev::toPublic(PublicCompressed const& _publicCompressed)
 	return Public{ &serializedPubkey[1], Public::ConstructFromPointer };
 }
 
+PublicCompressed dev::toPublicCompressed(Public const& _public)
+{
+	auto* ctx = getCtx();
+
+	std::array<byte, 65> orgi;
+	orgi[0] = 0x04;
+	bytesConstRef(&_public.asBytes()).copyTo(bytesRef(&orgi[1], Public::size));
+	secp256k1_pubkey rawPubkey;
+	if (!secp256k1_ec_pubkey_parse(
+		ctx, &rawPubkey, orgi.data(), orgi.size()))
+		return{};
+
+	PublicCompressed serializedPubkey;
+	size_t serializedPubkeySize = PublicCompressed::size;
+	secp256k1_ec_pubkey_serialize(
+		ctx, serializedPubkey.data(), &serializedPubkeySize, &rawPubkey, SECP256K1_EC_COMPRESSED);
+	auto aa = serializedPubkey.size;
+	assert(serializedPubkeySize == PublicCompressed::size);
+	// Expect single byte header of value 0x02 or 0x03 -- compressed public key.
+	assert(serializedPubkey[0] == 0x02 || serializedPubkey[0] == 0x03);
+
+	return serializedPubkey;
+}
+
 PublicCompressed dev::toPublicCompressed(Secret const& _secret)
 {
 	PublicCompressed serializedPubkey;
@@ -119,22 +143,15 @@ PublicCompressed dev::toPublicCompressed(Secret const& _secret)
 	return serializedPubkey;
 }
 
-secp256k1_pubkey dev::toPubkey(Signature const& _sig, h256 const& _message)
+secp256k1_pubkey dev::toPublickey(Secret const& _secret)
 {
-    int v = _sig[64];
-    if (v > 3)
-        return {};
+	auto* ctx = getCtx();
+	secp256k1_pubkey rawPubkey;
+	// Creation will fail if the secret key is invalid.
+	if (!secp256k1_ec_pubkey_create(ctx, &rawPubkey, _secret.data()))
+		return{};
 
-    auto* ctx = getCtx();
-    secp256k1_ecdsa_recoverable_signature rawSig;
-    if (!secp256k1_ecdsa_recoverable_signature_parse_compact(ctx, &rawSig, _sig.data(), v))
-        return {};
-
-    secp256k1_pubkey rawPubkey;
-    if (!secp256k1_ecdsa_recover(ctx, &rawPubkey, &rawSig, _message.data()))
-        return {};
-
-    return rawPubkey;
+	return rawPubkey;
 }
 
 Address dev::toAddress(Public const& _public)
@@ -305,27 +322,14 @@ Signature dev::sign(Secret const& _k, h256 const& _hash)
     return s;
 }
 
-bool dev::verify(Public const& _p, Signature const& _s, h256 const& _hash)
+bool dev::signProve(h648 & _proof, Secret const& _k, secp256k1_pubkey& _rawPubkey, h256 const& _hash)
 {
-    // TODO: Verify w/o recovery (if faster).
-    if (!_p)
-        return false;
-    return _p == recover(_s, _hash);
+	return secp256k1_vrf_prove(_proof.data(), _k.data(), &_rawPubkey, _hash.data(), _hash.size);
 }
 
-bool dev::verify(PublicCompressed const& _key, h512 const& _signature, h256 const& _hash)
+bool dev::verify(h256 & _out, h648 const& _proof, PublicCompressed const& _key, h256 const& _hash)
 {
-    auto* ctx = getCtx();
-
-    secp256k1_ecdsa_signature rawSig;
-    if (!secp256k1_ecdsa_signature_parse_compact(ctx, &rawSig, _signature.data()))
-        return false;
-
-    secp256k1_pubkey rawPubkey;
-    if (!secp256k1_ec_pubkey_parse(ctx, &rawPubkey, _key.data(), PublicCompressed::size))
-        return false;  // Invalid public key.
-
-    return secp256k1_ecdsa_verify(ctx, &rawSig, _hash.data(), &rawPubkey);
+	return secp256k1_vrf_verify(_out.data(), _proof.data(), _key.data(), _hash.data(), _hash.size);
 }
 
 KeyPair::KeyPair(Secret const& _sec) :

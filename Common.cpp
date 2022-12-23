@@ -113,7 +113,7 @@ PublicCompressed dev::toPublicCompressed(Public const& _public)
 
 	std::array<byte, 65> orgi;
 	orgi[0] = 0x04;
-	bytesConstRef(&_public.asBytes()).copyTo(bytesRef(&orgi[1], Public::size));
+	_public.ref().copyTo(bytesRef(&orgi[1], Public::size));
 	secp256k1_pubkey rawPubkey;
 	if (!secp256k1_ec_pubkey_parse(
 		ctx, &rawPubkey, orgi.data(), orgi.size()))

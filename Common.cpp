@@ -123,7 +123,6 @@ PublicCompressed dev::toPublicCompressed(Public const& _public)
 	size_t serializedPubkeySize = PublicCompressed::size;
 	secp256k1_ec_pubkey_serialize(
 		ctx, serializedPubkey.data(), &serializedPubkeySize, &rawPubkey, SECP256K1_EC_COMPRESSED);
-	auto aa = serializedPubkey.size;
 	assert(serializedPubkeySize == PublicCompressed::size);
 	// Expect single byte header of value 0x02 or 0x03 -- compressed public key.
 	assert(serializedPubkey[0] == 0x02 || serializedPubkey[0] == 0x03);
